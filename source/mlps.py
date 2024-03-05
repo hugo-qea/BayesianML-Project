@@ -1,23 +1,25 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from typing import List
+from typing import List, Union
 
 class SampleableMLP(nn.Module):
 
     def __init__(
             self, 
             input_size: int, 
-            hidden_sizes: List[int], 
-            output_size: int
+            hidden_sizes: List[int],
+            output_size: int,
+            activation=nn.ReLU()
         ):
         super(SampleableMLP, self).__init__()
         sizes = [input_size] + hidden_sizes + [output_size]
         self.layers = nn.ModuleList([nn.Linear(sizes[i], sizes[i+1]) for i in range(len(sizes)-1)])
+        self.activation = activation
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.layers[:-1]:
-            x = torch.relu(layer(x))
+            x = self.activation(layer(x))
         return self.layers[-1](x)
 
     def get_parameters(self) -> np.ndarray:
