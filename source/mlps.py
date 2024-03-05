@@ -1,7 +1,9 @@
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
+import torch.autograd as autograd
 from typing import List, Union
+
 
 class SampleableMLP(nn.Module):
     """
@@ -13,6 +15,10 @@ class SampleableMLP(nn.Module):
     - output_size (int): model output size
     - activations (list(nn.Module)): activation lists
         must contain an activation for each layer or None otherwise
+    - temperature (float): temperature for log-target
+
+    Attributes:
+    - multiclass: True for multilclass classification, False for binary classification
 
     Methods:
     - forward:
@@ -30,12 +36,17 @@ class SampleableMLP(nn.Module):
             input_size: int, 
             hidden_sizes: List[int],
             output_size: int,
-            activations: List[nn.Module]
+            activations: List[nn.Module],
+            temperature: float=1.,
         ):
         super(SampleableMLP, self).__init__()
         sizes = [input_size] + hidden_sizes + [output_size]
         self.layers = nn.ModuleList([nn.Linear(sizes[i], sizes[i+1]) for i in range(len(sizes)-1)])
         self.activations = activations
+        self.temperature = temperature
+
+        self.multiclass = (output_size > 1)
+        self.loss = nn.CrossEntropyLoss(reduction="sum") if self.multiclass else nn.BCELoss(reduction="sum")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer, activation in zip(self.layers, self.activations):
@@ -60,7 +71,7 @@ class SampleableMLP(nn.Module):
         Return:
         - parameters (np.ndarray): current model parameters
         """
-        return np.concatenate([param.data.cpu().numpy().flatten() for param in self.parameters()])
+        return np.concatenate([param.data.cpu().detach().numpy().flatten() for param in self.parameters()])
 
     def set_parameters(self, parameters: np.ndarray):
         """
@@ -84,7 +95,7 @@ class SampleableMLP(nn.Module):
         Return:
         - grad (np.ndarray): current model parameter gradients
         """
-        return np.concatenate([param.grad.cpu().numpy().flatten() for param in self.parameters()])
+        return np.concatenate([param.grad.cpu().detach().numpy().flatten() for param in self.parameters()])
 
     def set_grad(self, grad: np.ndarray):
         """ 
@@ -103,6 +114,46 @@ class SampleableMLP(nn.Module):
                 grad[current_idx:current_idx+flat_size].reshape(param.size())
             ).to(param.device)
             current_idx += flat_size
+
+    def compute_log_likelihood(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        """
+        Calculation of the log-likelihood of data
+
+        Parameters:
+        - x (torch.Tensor): input
+        - y (torch.Tensor): output
+
+        Returns:
+        - log-likelihood (torch.Tensor): log-likelihood
+        """
+        return -self.temperature * self.loss(x, y)
+
+    def compute_likelihood(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        """
+        Calculation of the likelihood of data
+
+        Parameters:
+        - x (torch.Tensor): input
+        - y (torch.Tensor): output
+
+        Returns:
+        - likelihood (torch.Tensor): likelihood
+        """
+        return torch.exp(self.compute_log_likelihood(x, y))
+
+    def compute_grad_log_target(self, log_target: torch.Tensor) -> np.ndarray:
+        """
+        Calculation of the gradient of model parameters based on log-likelihood 
+
+        Parameters:
+        - log_target (torch.Tensor): log-likelihood value
+
+        Returns:
+        - grad (np.ndarray): model parameter gradients
+        """
+        grad_log_target = autograd.grad(log_target, self.parameters(), create_graph=True)
+        return np.concatenate([grad.cpu().detach().numpy().flatten() for grad in grad_log_target])
+         
     
 
 
