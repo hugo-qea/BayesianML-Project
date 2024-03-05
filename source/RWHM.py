@@ -1,7 +1,8 @@
 from utils import *
+from sampler import Sampler
 
 
-class Metropolis_Hastings:
+class Metropolis_Hastings(Sampler):
     """
     Class representing the Metropolis-Hastings algorithm for sampling from a target distribution.
 
@@ -28,9 +29,7 @@ class Metropolis_Hastings:
         - theta_0: Initial value of the sampler (numpy.ndarray).
 
         """
-        self.log_target = log_target
-        self.sigma_prop = sigma_prop
-        self.theta_0 = theta_0
+        super().__init__(log_target, sigma_prop, theta_0)
 
     def sample(self,
                n_iter : int,
@@ -51,6 +50,9 @@ class Metropolis_Hastings:
         The resulting samples approximate the target distribution.
 
         """
+        if n_iter <= n_burn_in:
+            raise ValueError("n_iter must be greater than n_burn_in.")
+        
         theta = self.theta_0
         sample = np.zeros((n_iter + 1, len(theta)))
         sample[0] = theta

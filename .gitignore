@@ -1,0 +1,7 @@
+VENV/
+source/__pycache__/MALA.cpython-311.pyc
+source/__pycache__/metric_tensor.cpython-311.pyc
+source/__pycache__/mMALA.cpython-311.pyc
+source/__pycache__/RWHM.cpython-311.pyc
+source/__pycache__/sampler.cpython-311.pyc
+source/__pycache__/utils.cpython-311.pyc

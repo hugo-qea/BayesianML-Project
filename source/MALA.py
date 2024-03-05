@@ -1,7 +1,8 @@
 from utils import *
+from sampler import Sampler
 
 
-class MALA:
+class MALA(Sampler):
     """ 
     Metropolis-Adjusted Langevin Algorithm (MALA) Sampler
     
@@ -40,14 +41,13 @@ class MALA:
         - theta_0: Initial value of the sampler (numpy.ndarray).
 
         """
-        self.log_target = log_target
+        super().__init__(log_target, step_size, theta_0)
         self.grad_log_target = grad_log_target
-        self.step_size = step_size
-        self.theta_0 = theta_0
 
     def sample(self,
                n_iter : int,
-               n_burn_in: int =0):
+               n_burn_in: int =0,
+               verbose : bool =False) -> list:
         """
         Run the Metropolis-Adjusted Langevin Algorithm (MALA) sampler to generate samples from the target distribution.
 
@@ -64,6 +64,9 @@ class MALA:
         The resulting samples approximate the target distribution.
 
         """
+        if n_iter <= n_burn_in:
+            raise ValueError("n_iter must be greater than n_burn_in.")
+        
         theta = self.theta_0
         sample = np.zeros((n_iter + 1, len(theta)))
         sample[0] = theta
@@ -98,5 +101,7 @@ class MALA:
                 acceptance_rate += 1.0
 
             sample[i] = theta
+            if verbose:
+                print(f'Iteration {i}/{n_iter} done, acceptance rate: {acceptance_rate/i}, current sample: {theta}')
 
         return sample[n_burn_in::], acceptance_rate / n_iter
