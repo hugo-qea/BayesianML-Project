@@ -1,8 +1,9 @@
 from utils import *
 from metric_tensor import MetricTensor
+from sampler import Sampler
 
 
-class mMALA:
+class mMALA(Sampler):
     """
     Riemann Manifold Metropolis-Adjusted Langevin Algorithm (mMALA) for sampling from a target distribution.
 
@@ -39,6 +40,7 @@ class mMALA:
 
         """
         super().__init__(log_target, step_size, theta_0)
+        self.step_size = step_size
         self.metric_tensor = metric_tensor
         self.grad_log_target = grad_log_target
         self.flat = flat
