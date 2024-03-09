@@ -41,7 +41,7 @@ class MALA(Sampler):
         - theta_0: Initial value of the sampler (numpy.ndarray).
 
         """
-        super().__init__(log_target, step_size, theta_0)
+        super().__init__(log_target,theta_0)
         self.step_size = step_size
         self.grad_log_target = grad_log_target
 

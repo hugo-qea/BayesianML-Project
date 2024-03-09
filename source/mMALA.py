@@ -39,7 +39,7 @@ class mMALA(Sampler):
         - flat: Flag indicating whether to use a flat metric (default is True).
 
         """
-        super().__init__(log_target, step_size, theta_0)
+        super().__init__(log_target, theta_0)
         self.step_size = step_size
         self.metric_tensor = metric_tensor
         self.grad_log_target = grad_log_target

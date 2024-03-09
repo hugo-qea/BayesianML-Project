@@ -14,7 +14,7 @@ class Sampler(ABC):
     - sample(n_iter, n_burn_in=0): Abstract method to run the sampler.
     """
 
-    def __init__(self, log_target: callable, sigma_prop: float, theta_0: np.ndarray) -> None:
+    def __init__(self, log_target: callable, theta_0: np.ndarray) -> None:
         """
         Initialize the Sampler.
 
@@ -24,7 +24,6 @@ class Sampler(ABC):
         - theta_0: Initial value of the sampler (numpy.ndarray).
         """
         self.log_target = log_target
-        self.sigma_prop = sigma_prop
         self.theta_0 = theta_0
 
     @abstractmethod

@@ -29,7 +29,8 @@ class Metropolis_Hastings(Sampler):
         - theta_0: Initial value of the sampler (numpy.ndarray).
 
         """
-        super().__init__(log_target, sigma_prop, theta_0)
+        super().__init__(log_target, theta_0)
+        self.sigma_prop = sigma_prop
 
     def sample(self,
                n_iter : int,
