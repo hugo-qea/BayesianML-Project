@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.autograd as autograd
-from typing import List, Union
+from typing import List, Union, Optional
 
 
 class Model(nn.Module):
@@ -127,7 +127,12 @@ class Model(nn.Module):
             param.grad = grad[current_idx:current_idx+flat_size].reshape(param.size()).to(param.device)
             current_idx += flat_size
 
-    def compute_log_likelihood(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def compute_log_likelihood(
+            self, 
+            x: torch.Tensor, 
+            y: torch.Tensor,
+            parameters: Optional[torch.Tensor]=None,
+        ) -> torch.Tensor:
         """
         Calculation of the log-likelihood of data
 
@@ -135,12 +140,22 @@ class Model(nn.Module):
         - x (torch.Tensor): input
         - y (torch.Tensor): output
 
+        Optional parameters:
+        - parameters (torch.Tensor): new parameters
+
         Returns:
         - log-likelihood (torch.Tensor): log-likelihood
         """
+        if parameters is not None:
+            self.set_parameters(parameters)
         return -self.temperature * self.loss(self(x), y)
 
-    def compute_likelihood(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def compute_likelihood(
+            self, 
+            x: torch.Tensor, 
+            y: torch.Tensor,
+            parameters: Optional[torch.Tensor]=None,
+        ) -> torch.Tensor:
         """
         Calculation of the likelihood of data
 
@@ -148,22 +163,37 @@ class Model(nn.Module):
         - x (torch.Tensor): input
         - y (torch.Tensor): output
 
+        Optional parameters:
+        - parameters (torch.Tensor): new parameters
+
         Returns:
         - likelihood (torch.Tensor): likelihood
         """
-        return torch.exp(self.compute_log_likelihood(x, y))
+        return torch.exp(self.compute_log_likelihood(x, y, parameters))
 
-    def compute_log_prior(self) -> torch.Tensor:
+    def compute_log_prior(
+            self, 
+            parameters: Optional[torch.Tensor]=None
+        ) -> torch.Tensor:
         """
         Calculation of the log prior
+
+        Optional parameters:
+        - parameters (torch.Tensor): new parameters
 
         Returns:
         - log prior (torch.Tensor): log prior
         """
-        parameters = self.get_parameters()
+        if parameters is None:
+            parameters = self.get_parameters()
         return self.temperature * torch.sum(self.prior.log_prob(parameters))
 
-    def compute_log_target(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def compute_log_target(
+            self, 
+            x: torch.Tensor, 
+            y: torch.Tensor,
+            parameters: Optional[torch.Tensor]=None
+        ) -> torch.Tensor:
         """
         Calculation of the log target: log-likelihood + log prior
 
@@ -171,11 +201,14 @@ class Model(nn.Module):
         - x (torch.Tensor): input
         - y (torch.Tensor): output
 
+        Optional parameters:
+        - parameters (torch.Tensor): new parameters
+
         Returns:
         - log target (torch.Tensor): log target
         """
-        log_likelihood = self.compute_log_likelihood(x, y)
-        log_prior = self.compute_log_prior()
+        log_likelihood = self.compute_log_likelihood(x, y, parameters)
+        log_prior = self.compute_log_prior(parameters)
         return log_likelihood + log_prior
 
     def compute_grad_log_target(self, log_target: torch.Tensor) -> torch.Tensor:
@@ -193,23 +226,55 @@ class Model(nn.Module):
 
     def predictive_posterior(
             self,
-            thetas,
-            x,
-            y,
+            x: torch.Tensor,
+            y: torch.Tensor,
+            parameters_chain: torch.Tensor,
+        ) -> tuple:
+        """
+        Calculation of the posterior predictive distribution
 
-        ):
-        
-        integral = 0
-        n_kept_samples = 1
-        n_drop_samples = 0
+        Parameters:
+        - x (torch.Tensor): input
+        - y (torch.Tensor): output
+        - parameters_chain (torch.Tensor): (chain_length, num_parameters) parameters 
 
-        for theta in thetas:
+        Returns
+        - posterior predictive distribution (torch.Tensor)
+        - fail (int): number of fails
+        """
+        posterior = 0.
+        sucess = 1
+        fail = 0
 
-            self.set_parameters(theta)
-            t_integral = self.compute_likelihood(x, y)
-
-            if torch.isnan(t_integral):
-                n_drop_samples += 1
+        for parameters in parameters_chain:
+            posterior_param = self.compute_likelihood(x, y, parameters)
+            if not torch.isnan(posterior_param)
+                posterior = ((sucess - 1) * posterior + posterior_param) / sucess
+                sucess += 1
             else:
-                integral = ((n_kept_samples - 1) * integral + t_integral) / n_kept_samples
-                n_kept_samples += 1
+                fail += 1
+        
+        return posterior, fail
+
+    def predict(
+            self,
+            x: torch.Tensor,
+            parameters_chain: torch.Tensor,
+            return_probas: bool=True,
+            return_fails: bool=False
+        )-> tuple:
+        """
+        Calculation of the posterior predictive distribution
+
+        Parameters:
+        - x (torch.Tensor): input
+        - y (torch.Tensor): output
+        - parameters_chain (torch.Tensor): (chain_length, num_parameters) parameters 
+
+        Returns
+        - posterior predictive distribution (torch.Tensor)
+        - fail (int): number of fails
+        """
+        pass
+    
+
