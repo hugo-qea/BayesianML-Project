@@ -5,7 +5,7 @@ import torch.autograd as autograd
 from typing import List, Union
 
 
-class SampleableMLP(nn.Module):
+class Model(nn.Module):
     """
     MLPs whose parameters can be sampled with MCMCs
 
@@ -26,15 +26,13 @@ class SampleableMLP(nn.Module):
             activations: List[nn.Module],
             temperature: float=1.,
         ):
-        super(SampleableMLP, self).__init__()
+        super(Model, self).__init__()
         self.sizes = sizes
         self.layers = nn.ModuleList([nn.Linear(sizes[i], sizes[i+1]) for i in range(len(sizes)-1)])
         self.activations = activations
         self.temperature = temperature
 
-        is_multiclass = (self.sizes[-1] > 1)
-        self.loss = nn.CrossEntropyLoss(reduction="sum") if is_multiclass else nn.BCELoss(reduction="sum")
-
+        self.loss = nn.CrossEntropyLoss(reduction="sum")
         self.prior = torch.distributions.Normal(
             loc=torch.zeros(self.num_parameters()),
             scale=torch.ones(self.num_parameters())
@@ -58,25 +56,19 @@ class SampleableMLP(nn.Module):
 
     def set_prior(
             self, 
-            mu: Union[np.ndarray, torch.Tensor],
-            sigma: Union[np.ndarray, torch.Tensor]
+            mu: torch.Tensor,
+            sigma: torch.Tensor
         ):
         """
         Set prior distribution
 
         Parameters:
-        - mu (np.ndarray or torch.Tensor): mean of the distribution
-        - sigma (np.ndarray or torch.Tensor): standard deviation of the distribution
+        - mu (torch.Tensor): mean of the distribution
+        - sigma (torch.Tensor): standard deviation of the distribution
         """
         num_parameters = self.num_parameters()
         assert len(mu) == num_parameters
         assert len(sigma) == num_parameters
-
-        if isinstance(mu, np.ndarray):
-            mu = torch.from_numpy(mu)
-        if isinstance(sigma, np.ndarray):
-            sigma = torch.from_numpy(sigma)
-        
         self.prior = torch.distributions.Normal(loc=mu, scale=sigma)
 
     def num_parameters(self) -> int:
@@ -86,47 +78,45 @@ class SampleableMLP(nn.Module):
         Returns:
         - #parameters (int): number of model parameters
         """
-        return sum(p.numel() for p in self.parameters())
+        return sum(param.numel() for param in self.parameters())
 
-    def get_parameters(self) -> np.ndarray:
+    def get_parameters(self) -> torch.Tensor:
         """
-        Returns model parameters as 1D numpy array
+        Returns model parameters as 1D tensor
 
         Return:
-        - parameters (np.ndarray): current model parameters
+        - parameters (torch.Tensor): current model parameters
         """
-        return np.concatenate([param.data.cpu().detach().numpy().flatten() for param in self.parameters()])
+        return torch.cat([param.view(-1) for param in self.parameters()])
 
-    def set_parameters(self, parameters: np.ndarray):
+    def set_parameters(self, parameters: torch.Tensor):
         """
-        Updates model parameters from a 1D array
+        Updates model parameters from a 1D tensor
 
         Parameters:
-        - parameters (np.ndarray): new model parameters
+        - parameters (torch.Tensor): new model parameters
         """
         current_idx = 0
         for param in self.parameters():
             flat_size = np.prod(param.size())
-            param.data = torch.from_numpy(
-                parameters[current_idx:current_idx+flat_size].reshape(param.size())
-            ).to(param.device)
+            param.data = parameters[current_idx:current_idx+flat_size].view(param.size()).to(param.device)
             current_idx += flat_size
 
-    def get_grad(self) -> np.ndarray:
+    def get_grad(self) -> torch.Tensor:
         """
-        Returns model parameter gradients in the form of a 1D array
+        Returns model parameter gradients in the form of a 1D tensor
 
         Return:
-        - grad (np.ndarray): current model parameter gradients
+        - grad (torch.Tensor): current model parameter gradients
         """
-        return np.concatenate([param.grad.cpu().detach().numpy().flatten() for param in self.parameters()])
+        return torch.cat([param.grad.view(-1) for param in self.parameters()])
 
-    def set_grad(self, grad: np.ndarray):
+    def set_grad(self, grad: torch.Tensor):
         """ 
-        Updates model parameter gradients from a 1D array
+        Updates model parameter gradients from a 1D tensor
 
         Parameters:
-        - grad (np.ndarray): new model parameter gradients
+        - grad (torch.Tensor): new model parameter gradients
         """
         current_idx = 0
         for param in self.parameters():
@@ -134,9 +124,7 @@ class SampleableMLP(nn.Module):
             if param.grad is not None:
                 param.grad.detach_()
                 param.grad.zero_()
-            param.grad = torch.from_numpy(
-                grad[current_idx:current_idx+flat_size].reshape(param.size())
-            ).to(param.device)
+            param.grad = grad[current_idx:current_idx+flat_size].reshape(param.size()).to(param.device)
             current_idx += flat_size
 
     def compute_log_likelihood(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
@@ -150,7 +138,7 @@ class SampleableMLP(nn.Module):
         Returns:
         - log-likelihood (torch.Tensor): log-likelihood
         """
-        return -self.temperature * self.loss(x, y)
+        return -self.temperature * self.loss(self(x), y)
 
     def compute_likelihood(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """
@@ -172,7 +160,7 @@ class SampleableMLP(nn.Module):
         Returns:
         - log prior (torch.Tensor): log prior
         """
-        parameters = torch.from_numpy(self.get_parameters())
+        parameters = self.get_parameters()
         return self.temperature * torch.sum(self.prior.log_prob(parameters))
 
     def compute_log_target(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
@@ -190,7 +178,7 @@ class SampleableMLP(nn.Module):
         log_prior = self.compute_log_prior()
         return log_likelihood + log_prior
 
-    def compute_grad_log_target(self, log_target: torch.Tensor) -> np.ndarray:
+    def compute_grad_log_target(self, log_target: torch.Tensor) -> torch.Tensor:
         """
         Calculation of the gradient of model parameters based on log-likelihood 
 
@@ -198,25 +186,30 @@ class SampleableMLP(nn.Module):
         - log_target (torch.Tensor): log-likelihood value
 
         Returns:
-        - grad (np.ndarray): model parameter gradients
+        - grad (torch.Tensor): model parameter gradients
         """
         grad_log_target = autograd.grad(log_target, self.parameters(), create_graph=True)
-        return np.concatenate([grad.cpu().detach().numpy().flatten() for grad in grad_log_target])
-         
+        return torch.cat([grad.view(-1) for grad in grad_log_target])
 
-if __name__ == "__main__":
-    sizes = [2, 1, 2, 3]
-    activations = 3 * [nn.ReLU()] + [None]
+    def predictive_posterior(
+            self,
+            thetas,
+            x,
+            y,
 
-    mlp = SampleableMLP(sizes, activations)
-    print("Number of parameters :", mlp.num_parameters())
+        ):
+        
+        integral = 0
+        n_kept_samples = 1
+        n_drop_samples = 0
 
-    sampled_params = mlp.get_parameters()
-    print("Initial parameters :", sampled_params)
+        for theta in thetas:
 
-    updated_params = sampled_params + np.random.normal(0, 0.1, len(sampled_params))
-    print("New parameters :", updated_params)
+            self.set_parameters(theta)
+            t_integral = self.compute_likelihood(x, y)
 
-    mlp.set_parameters(updated_params)
-    updated_sampled_params = mlp.get_parameters()
-    print("Update parameters :", updated_sampled_params)
+            if torch.isnan(t_integral):
+                n_drop_samples += 1
+            else:
+                integral = ((n_kept_samples - 1) * integral + t_integral) / n_kept_samples
+                n_kept_samples += 1
