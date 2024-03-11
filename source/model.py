@@ -248,7 +248,7 @@ class Model(nn.Module):
 
         for parameters in parameters_chain:
             posterior_param = self.compute_likelihood(x, y, parameters)
-            if not torch.isnan(posterior_param)
+            if not torch.isnan(posterior_param):
                 posterior = ((sucess - 1) * posterior + posterior_param) / sucess
                 sucess += 1
             else:
@@ -268,13 +268,40 @@ class Model(nn.Module):
 
         Parameters:
         - x (torch.Tensor): input
-        - y (torch.Tensor): output
         - parameters_chain (torch.Tensor): (chain_length, num_parameters) parameters 
+        - return_probas (bool): return probas of each class
+        - return_fails (bool): return number of fails 
 
         Returns
-        - posterior predictive distribution (torch.Tensor)
+        - predicted classes 
+        - posterior predictive distribution (torch.Tensor) 
         - fail (int): number of fails
         """
-        pass
-    
+        n_classes = self.sizes[-1]
+        batch_size = x.size(0) # must be 1
+
+        y_posterior_probas = torch.zeros((batch_size, n_classes), dtype=torch.float32)
+        y_fails = torch.zeros((n_classes,), dtype=torch.long)
+
+        for i in range(n_classes):
+            y = torch.Tensor([i] * batch_size)
+            posterior, fail = self.predictive_posterior(x, y, parameters_chain)
+
+            y_posterior_probas[:, i] = posterior
+            y_fails[i] = fail
+
+            if n_classes == 2:
+                y_posterior_probas[:, 1] = 1 - posterior
+                y_fails[1] = fail
+                break
+
+        y_pred = torch.argmax(y_posterior_probas, dim=1)
+
+        ret = [y_pred]
+        if return_probas:
+            ret += [y_posterior_probas]
+        if return_fails:
+            ret += [y_fails]
+
+        return tuple(ret)
 
