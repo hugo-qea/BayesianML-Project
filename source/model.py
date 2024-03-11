@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.autograd as autograd
 from typing import List, Union, Optional
+from utils import numpy_to_tensor_decorator
 
 
 class Model(nn.Module):
@@ -38,6 +39,7 @@ class Model(nn.Module):
             scale=torch.ones(self.num_parameters())
         )
 
+    @numpy_to_tensor_decorator
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer, activation in zip(self.layers, self.activations):
             x = layer(x)
@@ -54,6 +56,7 @@ class Model(nn.Module):
         """
         return self.prior
 
+    @numpy_to_tensor_decorator
     def set_prior(
             self, 
             mu: torch.Tensor,
@@ -89,6 +92,7 @@ class Model(nn.Module):
         """
         return torch.cat([param.view(-1) for param in self.parameters()])
 
+    @numpy_to_tensor_decorator
     def set_parameters(self, parameters: torch.Tensor):
         """
         Updates model parameters from a 1D tensor
@@ -111,6 +115,7 @@ class Model(nn.Module):
         """
         return torch.cat([param.grad.view(-1) for param in self.parameters()])
 
+    @numpy_to_tensor_decorator
     def set_grad(self, grad: torch.Tensor):
         """ 
         Updates model parameter gradients from a 1D tensor
@@ -127,6 +132,7 @@ class Model(nn.Module):
             param.grad = grad[current_idx:current_idx+flat_size].reshape(param.size()).to(param.device)
             current_idx += flat_size
 
+    @numpy_to_tensor_decorator
     def compute_log_likelihood(
             self, 
             x: torch.Tensor, 
@@ -150,6 +156,7 @@ class Model(nn.Module):
             self.set_parameters(parameters)
         return -self.temperature * self.loss(self(x), y)
 
+    @numpy_to_tensor_decorator
     def compute_likelihood(
             self, 
             x: torch.Tensor, 
@@ -171,6 +178,7 @@ class Model(nn.Module):
         """
         return torch.exp(self.compute_log_likelihood(x, y, parameters))
 
+    @numpy_to_tensor_decorator
     def compute_log_prior(
             self, 
             parameters: Optional[torch.Tensor]=None
@@ -188,6 +196,7 @@ class Model(nn.Module):
             parameters = self.get_parameters()
         return self.temperature * torch.sum(self.prior.log_prob(parameters))
 
+    @numpy_to_tensor_decorator
     def compute_log_target(
             self, 
             x: torch.Tensor, 
@@ -211,6 +220,7 @@ class Model(nn.Module):
         log_prior = self.compute_log_prior(parameters)
         return log_likelihood + log_prior
 
+    @numpy_to_tensor_decorator
     def compute_grad_log_target(self, log_target: torch.Tensor) -> torch.Tensor:
         """
         Calculation of the gradient of model parameters based on log-likelihood 
@@ -224,6 +234,7 @@ class Model(nn.Module):
         grad_log_target = autograd.grad(log_target, self.parameters(), create_graph=True)
         return torch.cat([grad.view(-1) for grad in grad_log_target])
 
+    @numpy_to_tensor_decorator
     def predictive_posterior(
             self,
             x: torch.Tensor,
@@ -256,6 +267,7 @@ class Model(nn.Module):
         
         return posterior, fail
 
+    @numpy_to_tensor_decorator
     def predict(
             self,
             x: torch.Tensor,
