@@ -15,6 +15,7 @@ class Model(nn.Module):
     - activations (list(nn.Module)): activation lists
         must contain an activation for each layer or None otherwise
     - temperature (float): temperature for log-target
+    - device: device
 
     Attributes:
     - loss (nn.Module): CrossEntropyLoss for multiclass classification, BCELoss for binary classification
@@ -26,12 +27,14 @@ class Model(nn.Module):
             sizes: List[int],
             activations: List[nn.Module],
             temperature: float=1.,
+            device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
         ):
         super(Model, self).__init__()
         self.sizes = sizes
         self.layers = nn.ModuleList([nn.Linear(sizes[i], sizes[i+1]) for i in range(len(sizes)-1)])
         self.activations = activations
         self.temperature = temperature
+        self.device = device
 
         self.loss = nn.CrossEntropyLoss(reduction="sum")
         self.prior = torch.distributions.Normal(
@@ -39,8 +42,11 @@ class Model(nn.Module):
             scale=torch.ones(self.num_parameters())
         )
 
+        self.to(self.device)
+
     @numpy_to_tensor_decorator
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.to(self.device)
         for layer, activation in zip(self.layers, self.activations):
             x = layer(x)
             if activation is not None:
@@ -72,6 +78,8 @@ class Model(nn.Module):
         num_parameters = self.num_parameters()
         assert len(mu) == num_parameters
         assert len(sigma) == num_parameters
+        mu = mu.to(self.device)
+        sigma = sigma.to(self.device)
         self.prior = torch.distributions.Normal(loc=mu, scale=sigma)
 
     def num_parameters(self) -> int:
@@ -100,6 +108,7 @@ class Model(nn.Module):
         Parameters:
         - parameters (torch.Tensor): new model parameters
         """
+        parameters = parameters.to(self.device)
         current_idx = 0
         for param in self.parameters():
             flat_size = np.prod(param.size())
@@ -123,6 +132,7 @@ class Model(nn.Module):
         Parameters:
         - grad (torch.Tensor): new model parameter gradients
         """
+        grad = grad.to(self.device)
         current_idx = 0
         for param in self.parameters():
             flat_size = np.prod(param.size())
@@ -154,7 +164,7 @@ class Model(nn.Module):
         """
         if parameters is not None:
             self.set_parameters(parameters)
-        return -self.temperature * self.loss(self(x), y)
+        return -self.temperature * self.loss(self(x), y.to(self.device))
 
     @numpy_to_tensor_decorator
     def compute_likelihood(
@@ -194,6 +204,7 @@ class Model(nn.Module):
         """
         if parameters is None:
             parameters = self.get_parameters()
+        parameters = parameters.to(self.device)
         return self.temperature * torch.sum(self.prior.log_prob(parameters))
 
     @numpy_to_tensor_decorator
@@ -231,6 +242,7 @@ class Model(nn.Module):
         Returns:
         - grad (torch.Tensor): model parameter gradients
         """
+        log_target = log_target.to(self.device)
         grad_log_target = autograd.grad(log_target, self.parameters(), create_graph=True)
         return torch.cat([grad.view(-1) for grad in grad_log_target])
 
@@ -296,7 +308,7 @@ class Model(nn.Module):
         y_fails = torch.zeros((n_classes,), dtype=torch.long)
 
         for i in range(n_classes):
-            y = torch.LongTensor([i] * batch_size)
+            y = torch.LongTensor([i] * batch_size).to(self.device)
             posterior, fail = self.predictive_posterior(x, y, parameters_chain)
 
             y_posterior_probas[:, i] = posterior
