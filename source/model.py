@@ -272,7 +272,7 @@ class Model(nn.Module):
             self,
             x: torch.Tensor,
             parameters_chain: torch.Tensor,
-            return_probas: bool=True,
+            return_probas: bool=False,
             return_fails: bool=False
         )-> tuple:
         """
@@ -296,7 +296,7 @@ class Model(nn.Module):
         y_fails = torch.zeros((n_classes,), dtype=torch.long)
 
         for i in range(n_classes):
-            y = torch.Tensor([i] * batch_size)
+            y = torch.LongTensor([i] * batch_size)
             posterior, fail = self.predictive_posterior(x, y, parameters_chain)
 
             y_posterior_probas[:, i] = posterior
