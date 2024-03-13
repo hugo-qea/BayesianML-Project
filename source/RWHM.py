@@ -18,8 +18,8 @@ class Metropolis_Hastings(Sampler):
 
     def __init__(self,
                 log_target: callable,
-                sigma_prop: float,
-                theta_0: np.ndarray) -> None:
+                theta_0: np.ndarray,
+                sigma_prop: float =None) -> None:
         """
         Initialize the Metropolis-Hastings Sampler.
 
@@ -58,6 +58,11 @@ class Metropolis_Hastings(Sampler):
         sample = np.zeros((n_iter + 1, len(theta)))
         sample[0] = theta
         acceptance_rate = 0.0
+        flag = False
+        if self.sigma_prop is None:
+            flag = True
+            l = 0
+            self.sigma_prop = np.exp(l)
 
         for i in tqdm(range(1, n_iter + 1)):
             # Proposal
@@ -72,5 +77,14 @@ class Metropolis_Hastings(Sampler):
                 acceptance_rate += 1.0
 
             sample[i] = theta
+            
+            if flag and i %50 ==0:
+                acc= acceptance_rate / i
+                delta = min(0.01, 1/np.sqrt(i))
+                if acc < 0.24:
+                    l -= delta
+                else:
+                    l += delta
+                self.sigma_prop = np.exp(l)
 
         return sample[n_burn_in::], acceptance_rate / n_iter
