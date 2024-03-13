@@ -20,11 +20,12 @@ class HMC(Sampler):
     """
 
     def __init__(self, log_target: callable, grad_log_target: callable, step_size: float, n_leapfrog: int, theta_0: np.ndarray) -> None:
-        super().__init__(log_target, step_size, theta_0)
+        super().__init__(log_target, theta_0)
         self.grad_log_target = grad_log_target
         self.n_leapfrog = n_leapfrog
+        self.step_size = step_size
 
-    def leapfrog(self, theta, p, step_size):
+    def leapfrog(self, theta, p,step_size):
         """
         Performs the leapfrog integration to simulate Hamiltonian dynamics.
 
@@ -45,7 +46,7 @@ class HMC(Sampler):
 
         return theta, p
 
-    def sample(self, n_iter: int, n_burn_in: int = 0, verbose: bool = False):
+    def sample(self, n_iter: int, n_burn_in: int = 0, verbose: bool = False, return_burn_in: bool = True):
         if n_iter <= n_burn_in:
             raise ValueError("n_iter must be greater than n_burn_in.")
 
@@ -54,7 +55,7 @@ class HMC(Sampler):
         samples[0] = theta
         acceptance_rate = 0.0
 
-        for i in range(1, n_iter + 1):
+        for i in tqdm(range(1, n_iter + 1)):
             p_current = np.random.randn(*theta.shape)  # draw random momentum
             theta_proposed, p_proposed = self.leapfrog(np.copy(theta), np.copy(p_current), self.step_size)
 
@@ -69,7 +70,9 @@ class HMC(Sampler):
 
             samples[i] = theta
 
-            if verbose:
-                print(f'Iteration {i}/{n_iter} done, acceptance rate: {acceptance_rate/i}, current sample: {theta}')
-
-        return samples[n_burn_in:], acceptance_rate / n_iter
+            if verbose and i % 10000 == 0:
+                print(f'Iteration {i}/{n_iter} done, acceptance rate: {acceptance_rate/i}')
+        if return_burn_in:
+            return samples, acceptance_rate / n_iter
+        else:
+            return samples[n_burn_in:], acceptance_rate / n_iter

@@ -34,7 +34,9 @@ class Metropolis_Hastings(Sampler):
 
     def sample(self,
                n_iter : int,
-               n_burn_in: int =0):
+               n_burn_in: int =0,
+               verbose : bool =False,
+               return_burn_in: bool = True) -> list:
         """
         Run the Metropolis-Hastings sampler to generate samples from the target distribution.
 
@@ -59,6 +61,7 @@ class Metropolis_Hastings(Sampler):
         sample[0] = theta
         acceptance_rate = 0.0
         flag = False
+        accepted = 0.0
         if self.sigma_prop is None:
             flag = True
             l = 0
@@ -75,16 +78,23 @@ class Metropolis_Hastings(Sampler):
             if np.log(np.random.rand()) < min(0,log_ratio):
                 theta = theta_star
                 acceptance_rate += 1.0
+                accepted += 1.0
 
             sample[i] = theta
             
             if flag and i %50 ==0:
-                acc= acceptance_rate / i
+                accepted /= 50
                 delta = min(0.01, 1/np.sqrt(i))
-                if acc < 0.24:
+                if accepted < 0.24:
                     l -= delta
                 else:
                     l += delta
                 self.sigma_prop = np.exp(l)
+                accepted = 0.0
+                
+            if verbose and i % 10000 == 0:
+                print(f"Acceptance rate at iteration {i}: {acceptance_rate / i}")
 
+        if return_burn_in:
+            return sample, acceptance_rate / n_iter
         return sample[n_burn_in::], acceptance_rate / n_iter
