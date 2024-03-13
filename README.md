@@ -2,7 +2,7 @@
 
 ## Description
 
-This is the repository for the project of the course Bayesian Machine Learning, 2023/2024, ENS Paris-Saclay, Master MVA.
+This repository contains our work for the validation project of the course Bayesian Machine Learning, 2023/2024, ENS Paris-Saclay, Master MVA.
 
 It consists in a thorough study of the paper "Challenges in Markov chain Monte Carlo
 for Bayesian neural networks" by Theodore Papamarkou et al.
@@ -64,6 +64,6 @@ python your_script.py
 ```
 
 ## Authors
-- Ben Kabongo, Ecole Normale Supérieure Paris-Saclay - [BenKabongo25] (https://github.com/BenKabongo25)
-- Hugo Queniat, Télécom Paris - [hugo-qea] (https://github.com/hugo-qea)
-- Thibault Robine, Télécom SudParis - [ThibaultRobine] (https://github.com/ThibaultRobine)
+- Ben Kabongo, Ecole Normale Supérieure Paris-Saclay - [BenKabongo25](https://github.com/BenKabongo25)
+- Hugo Queniat, Télécom Paris - [hugo-qea](https://github.com/hugo-qea)
+- Thibault Robine, Télécom SudParis - [ThibaultRobine](https://github.com/ThibaultRobine)
