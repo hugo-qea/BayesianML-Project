@@ -47,3 +47,30 @@ def effective_sample_size(samples: np.ndarray) -> np.ndarray:
         ess[param] = n_samples / (1 + 2 * autocorr_sum)
 
     return ess
+
+def gelman_rubin(chains):
+    """
+    Calculate the Potential Scale Reduction Factor (PSRF) for MCMC chains.
+
+    Parameters:
+    - chains: A 3D numpy array containing the sampled chains with shape (n_chains, n_samples, n_parameters).
+
+    Returns:
+    - R_hat: The PSRF (R̂) for each parameter.
+    """
+    n_chains, n_samples, n_parameters = chains.shape
+    # Calculate the within-chain variance
+    W = np.mean(np.var(chains, axis=1, ddof=1), axis=0)
+
+    # Calculate the between-chain variance
+    chain_means = np.mean(chains, axis=1)
+    mean_of_means = np.mean(chain_means, axis=0)
+    B = n_samples * np.sum((chain_means - mean_of_means)**2, axis=0) / (n_chains - 1)
+
+    # Estimate the marginal posterior variance
+    var_hat = (n_samples - 1) / n_samples * W + B / n_samples
+
+    # Calculate the Potential Scale Reduction Factor
+    R_hat = np.sqrt(var_hat / W)
+
+    return R_hat
