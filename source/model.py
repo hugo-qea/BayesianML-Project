@@ -37,11 +37,11 @@ class Model(nn.Module):
         self.device = device
 
         self.loss = nn.CrossEntropyLoss(reduction="sum")
-        self.prior = torch.distributions.Normal(
-            loc=torch.zeros(self.num_parameters()),
-            scale=torch.ones(self.num_parameters())
+        self.set_prior(
+            mu=torch.zeros(self.num_parameters()),
+            sigma=torch.ones(self.num_parameters())
         )
-
+        
         self.to(self.device)
 
     @numpy_to_tensor_decorator
