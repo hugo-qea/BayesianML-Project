@@ -1,20 +1,17 @@
-Repository for the project of the course Bayesian Machine Learning, 2023/2024, ENS Paris-Saclay, Master MVA.
-
-It is a thorough study of the paper "Challenges in Markov chain Monte Carlo
-for Bayesian neural networks" by Theodore Papamarkou et al.
-
 # Bayesian Machine Learning Project
 
 ## Description
 
-This project is dedicated to exploring and implementing Bayesian Machine Learning techniques. It aims to provide a comprehensive understanding and application of Bayesian methods in machine learning, showcasing how these approaches can be used to model uncertainty, improve predictions, and make informed decisions based on probabilistic reasoning.
+This is the repository for the project of the course Bayesian Machine Learning, 2023/2024, ENS Paris-Saclay, Master MVA.
+
+It consists in a thorough study of the paper "Challenges in Markov chain Monte Carlo
+for Bayesian neural networks" by Theodore Papamarkou et al.
 
 ## Features
 
-- Implementation of various Bayesian models
-- Examples and tutorials on Bayesian inference
-- Comparison of Bayesian methods with traditional machine learning approaches
-- Case studies demonstrating the application of Bayesian Machine Learning in real-world scenarios
+- Implementation of several MCMC algorithms for Bayesian inference : Random Walk Metropolis-Hastings (`RWHM.py`), Hamiltonian Monte Carlo (`HMC.py`), Metropolis-adjusted Langevin algorithm (`MALA.py`);
+- BNN implementation with PyTorch (MLPs);
+- Application to real datasets.
 
 ## Installation
 
@@ -67,6 +64,6 @@ python your_script.py
 ```
 
 ## Authors
-- Ben Kabongo, Ecole Normale Supérieure Paris-Saclay - BenKabongo25
-- Hugo Queniat, Télécom Paris - hugo-qea
-- Thibault Robine, Télécom SudParis - ThibaultRobine
+- Ben Kabongo, Ecole Normale Supérieure Paris-Saclay - [BenKabongo25] (https://github.com/BenKabongo25)
+- Hugo Queniat, Télécom Paris - [hugo-qea] (https://github.com/hugo-qea)
+- Thibault Robine, Télécom SudParis - [ThibaultRobine] (https://github.com/ThibaultRobine)
