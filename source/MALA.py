@@ -102,7 +102,7 @@ class MALA(Sampler):
                 acceptance_rate += 1.0
 
             sample[i] = theta
-            if verbose:
-                print(f'Iteration {i}/{n_iter} done, acceptance rate: {acceptance_rate/i}, current sample: {theta}')
+            if verbose and i % 10000 == 0:
+                print(f'Iteration {i}/{n_iter} done, acceptance rate: {acceptance_rate/i}')
 
         return sample[n_burn_in::], acceptance_rate / n_iter
