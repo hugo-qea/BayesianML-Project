@@ -11,7 +11,7 @@ for Bayesian neural networks" by Theodore Papamarkou et al.
 
 - Implementation of several MCMC algorithms for Bayesian inference : Random Walk Metropolis-Hastings (`RWHM.py`), Hamiltonian Monte Carlo (`HMC.py`), Metropolis-adjusted Langevin algorithm (`MALA.py`);
 - BNN implementation with PyTorch (MLPs);
-- Application to real datasets.
+- Application to synthetic and real datasets both from the paper and our own.
 
 ## Installation
 
@@ -59,8 +59,13 @@ To run our examples, dedicated notebooks is provided in the `notebooks` director
     ```bash
     jupyter lab
     ```
-- A notebook that carries out the predictions on the datasets `mcmc.ipynb` is provided.
-- A notebook that computes several diagnostics on the Chains `mcmc_diagnostic.ipynb` is provided.
+- A notebook that carries out the predictions on the datasets of the paper `mcmc.ipynb` is provided.
+- A notebook that computes several diagnostics on this Markov Chains `mcmc_diagnostic.ipynb` is provided.
+- A notebook that carries out our own experiments on the Iris dataset `mcmc_iris.ipynb` is provided.
+- A notebook that determines the accuracy through SGD `sgd.ipynb` is provided.
+
+For testing, the folder `tests` contains several notebooks with tests for the different samplers and models.
+
 
 ### Creating Your Own Scripts
 You can create your own Python scripts and run them within the virtual environment. Make sure to activate the virtual environment before running your scripts:
