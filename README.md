@@ -10,6 +10,7 @@ for Bayesian neural networks" by Theodore Papamarkou et al.
 ## Features
 
 - Implementation of several MCMC algorithms for Bayesian inference : Random Walk Metropolis-Hastings (`RWHM.py`), Hamiltonian Monte Carlo (`HMC.py`), Metropolis-adjusted Langevin algorithm (`MALA.py`);
+- Implementation of a BNN model, an MLP (`model.py`) fit for Bayesian inference via MCMC;
 - BNN implementation with PyTorch (MLPs);
 - Application to synthetic and real datasets both from the paper and our own.
 
