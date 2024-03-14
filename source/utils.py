@@ -39,7 +39,7 @@ def effective_sample_size(samples: np.ndarray) -> np.ndarray:
     det_variances = np.prod(variances)
 
     # Normalize determinants by sample size and parameter count to estimate ESS
-    ess = (det_variances / det_cov_matrix)**(1.0 / n_parameters) * n_samples
+    ess = ((det_variances / det_cov_matrix)**(1.0 / n_parameters)) * n_samples
     return ess
 
 

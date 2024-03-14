@@ -19,11 +19,14 @@ class HMC(Sampler):
         Initial value of the parameters.
     """
 
-    def __init__(self, log_target: callable, grad_log_target: callable, step_size: float, n_leapfrog: int, theta_0: np.ndarray) -> None:
+    def __init__(self, log_target: callable, grad_log_target: callable, n_leapfrog: int, theta_0: np.ndarray,  step_size: float = None) -> None:
         super().__init__(log_target, theta_0)
         self.grad_log_target = grad_log_target
         self.n_leapfrog = n_leapfrog
-        self.step_size = step_size
+        if step_size is not None:
+            self.step_size = step_size
+        else:
+            self.step_size = 0.0001 * np.power(len(theta_0), -0.5)
 
     def leapfrog(self, theta, p,step_size):
         """

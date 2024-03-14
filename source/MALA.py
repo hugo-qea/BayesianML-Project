@@ -116,7 +116,7 @@ class AdaptiveMALA(Sampler):
                  step_size: float = None,
                  target_acceptance_rate: float = 0.574,
                  adapt_interval: int = 50,
-                 adapt_size: float = 0.01) -> None:
+                 adapt_size: float = 0.1) -> None:
         super().__init__(log_target, theta_0)
         if step_size is None:
             self.step_size = np.power(len(theta_0), -0.33) * np.square(0.01)
@@ -159,7 +159,7 @@ class AdaptiveMALA(Sampler):
                     self.step_size *= (1 + self.adapt_size)
                 accepted = 0  # Reset accepted count for next interval
 
-            if verbose and i % 10 == 0:
+            if verbose and i % 1000 == 0:
                 print(f"Iteration {i}/{n_iter}, Acceptance Rate: {acceptance_rate / i}, Step Size: {self.step_size}")
 
         if return_burn_in:
