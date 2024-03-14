@@ -50,7 +50,17 @@ Ensure you have Python 3.6 or newer installed on your system. You can download P
 After installing the project, you can run the examples or your own scripts within the virtual environment. Make sure to activate the virtual environment whenever you're working on the project.
 
 ### Running Examples
-To run our examples, a dedicated notebook is provided in the `notebooks` directory. You can open it using Jupyter Notebook or Jupyter Lab and execute the cells to see the results.
+To run our examples, dedicated notebooks is provided in the `notebooks` directory. You can open them using Jupyter Notebook or Jupyter Lab and execute the cells to see the results.
+    
+    ```bash
+    jupyter notebook
+    ```
+
+    ```bash
+    jupyter lab
+    ```
+- A notebook that carries out the predictions on the datasets `mcmc.ipynb` is provided.
+- A notebook that computes several diagnostics on the Chains `mcmc_diagnostic.ipynb` is provided.
 
 ### Creating Your Own Scripts
 You can create your own Python scripts and run them within the virtual environment. Make sure to activate the virtual environment before running your scripts:

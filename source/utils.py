@@ -22,55 +22,57 @@ def numpy_to_tensor_decorator(func):
 
 def effective_sample_size(samples: np.ndarray) -> np.ndarray:
     """
-    Calculate the Effective Sample Size (ESS) for each parameter based on the autocorrelation.
+    Estimate the Effective Sample Size (ESS) for a multivariate sample.
 
     Parameters:
-    - samples: Array containing the generated samples after burn-in (numpy.ndarray).
+    - samples: A 2D numpy array of shape (n_samples, n_parameters).
 
     Returns:
-    - ess: Effective Sample Size for each parameter (numpy.ndarray).
+    - ess: Estimated Effective Sample Size for the multivariate sample.
     """
-    n_samples = samples.shape[0]
-    n_params = samples.shape[1]
-    mean_samples = np.mean(samples, axis=0)
-    var_samples = np.var(samples, axis=0, ddof=1)
-    ess = np.zeros(n_params)
+    n_samples, n_parameters = samples.shape
+    cov_matrix = np.cov(samples, rowvar=False)  # Sample covariance matrix
+    variances = np.var(samples, axis=0, ddof=1)  # Variances of individual parameters
 
-    for param in range(n_params):
-        autocorr_sum = 0
-        for lag in range(1, n_samples):
-            autocorr_lag = np.corrcoef(samples[:n_samples-lag, param], samples[lag:, param])[0, 1]
-            if autocorr_lag <= 0:
-                break
-            autocorr_sum += autocorr_lag
+    # Calculate determinants
+    det_cov_matrix = np.linalg.det(cov_matrix)
+    det_variances = np.prod(variances)
 
-        ess[param] = n_samples / (1 + 2 * autocorr_sum)
-
+    # Normalize determinants by sample size and parameter count to estimate ESS
+    ess = (det_variances / det_cov_matrix)**(1.0 / n_parameters) * n_samples
     return ess
+
 
 def gelman_rubin(chains):
     """
-    Calculate the Potential Scale Reduction Factor (PSRF) for MCMC chains.
+    Calculate the multivariate potential scale reduction factor (PSRF) for MCMC chains.
 
     Parameters:
-    - chains: A 3D numpy array containing the sampled chains with shape (n_chains, n_samples, n_parameters).
+    - chains: A 3D numpy array of shape (n_chains, n_samples, n_parameters).
 
     Returns:
-    - R_hat: The PSRF (R̂) for each parameter.
+    - psrf: The multivariate PSRF.
     """
     n_chains, n_samples, n_parameters = chains.shape
-    # Calculate the within-chain variance
-    W = np.mean(np.var(chains, axis=1, ddof=1), axis=0)
-
-    # Calculate the between-chain variance
+    
+    # Calculate within-chain covariance matrices
+    within_chain_cov = np.mean([np.cov(chains[m], rowvar=False) for m in range(n_chains)], axis=0)
+    
+    # Calculate between-chain covariance matrix
     chain_means = np.mean(chains, axis=1)
     mean_of_means = np.mean(chain_means, axis=0)
-    B = n_samples * np.sum((chain_means - mean_of_means)**2, axis=0) / (n_chains - 1)
+    B_over_n = np.cov(chain_means, rowvar=False)
+    between_chain_cov = B_over_n * n_samples
 
-    # Estimate the marginal posterior variance
-    var_hat = (n_samples - 1) / n_samples * W + B / n_samples
+    # Calculate W and B
+    W = within_chain_cov
+    B = between_chain_cov
+    
+    # Estimate marginal posterior variance (V_hat)
+    V_hat = ((n_samples - 1) / n_samples) * W + ((n_chains + 1) / (n_chains * n_samples)) * B
 
-    # Calculate the Potential Scale Reduction Factor
-    R_hat = np.sqrt(var_hat / W)
+    # Calculate multivariate PSRF
+    lambdas, _ = np.linalg.eig(V_hat @ np.linalg.inv(W))
+    psrf = np.sqrt(np.max(lambdas) * (n_samples - 1) / n_samples + 1)
 
-    return R_hat
+    return psrf
