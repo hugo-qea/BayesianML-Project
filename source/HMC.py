@@ -73,7 +73,7 @@ class HMC(Sampler):
 
             samples[i] = theta
 
-            if verbose and i % 10000 == 0:
+            if verbose and i % 1000 == 0:
                 print(f'Iteration {i}/{n_iter} done, acceptance rate: {acceptance_rate/i}')
         if return_burn_in:
             return samples, acceptance_rate / n_iter
